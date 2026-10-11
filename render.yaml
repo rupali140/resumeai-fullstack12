@@ -1,0 +1,42 @@
+# Render Blueprint — place this file at the ROOT of your GitHub repo.
+# It creates: a Postgres database, the FastAPI backend, and the static frontend.
+# If your repo has an extra top-level folder (e.g. resumeai-app/), change both
+# rootDir values below to "resumeai-app/backend" and "resumeai-app/frontend".
+
+databases:
+  - name: resumeai-db
+    databaseName: resumeai
+    user: resumeai
+    plan: free
+
+services:
+  - type: web
+    name: resumeai-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATABASE_URL
+        fromDatabase:
+          name: resumeai-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false # Render will ask you to paste this when you create the Blueprint
+      - key: CLAUDE_MODEL
+        value: claude-sonnet-5-5
+      - key: CORS_ORIGINS
+        value: "*" # after the frontend is live, change to its exact URL (no trailing slash)
+
+  - type: web
+    name: resumeai-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: echo "static site - no build step"
+    staticPublishPath: .
